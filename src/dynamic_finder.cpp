@@ -329,7 +329,7 @@ std::vector<uintptr_t> DynamicFinder::FindStringStructures() {
 
 // ==================== HELPERS ====================
 
-std::map<int, uint64_t> DynamicFinder::ReadFields(uintptr_t addr, int maxBytes) {
+std::map<int, uint64_t> DynamicFinder::ReadFields(uintptr_t addr, int maxBytes) const {
     std::map<int, uint64_t> fields;
     auto data = scanner.ReadBytes(addr, maxBytes);
     

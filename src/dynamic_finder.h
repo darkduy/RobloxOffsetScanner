@@ -49,7 +49,7 @@ private:
     std::vector<uintptr_t> FindStringStructures();
     
     // Analysis functions
-    std::map<int, uint64_t> ReadFields(uintptr_t addr, int maxBytes);
+    std::map<int, uint64_t> ReadFields(uintptr_t addr, int maxBytes) const;
     
     // Validation
     bool IsValidPointer(uint64_t value) const;
