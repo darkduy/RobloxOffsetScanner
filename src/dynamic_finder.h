@@ -1,7 +1,10 @@
 #pragma once
 #include "memory_scanner.h"
 #include <map>
+#include <optional>
 #include <set>
+#include <string>
+#include <vector>
 
 class DynamicFinder {
 public:
@@ -10,7 +13,7 @@ public:
         uintptr_t offset;
         double confidence;
         bool found;
-        
+
         Result() : offset(0), confidence(0.0), found(false) {}
         Result(const std::string& n) : name(n), offset(0), confidence(0.0), found(false) {}
     };
@@ -18,6 +21,7 @@ public:
 private:
     MemoryScanner& scanner;
     std::vector<Result> results;
+    mutable std::optional<std::vector<uintptr_t>> cachedMaps;
 
 public:
     DynamicFinder(MemoryScanner& s) : scanner(s) {
@@ -35,32 +39,33 @@ public:
 
     std::vector<Result> ScanAll();
     void PrintResults() const;
-    void ExportToFile(const std::string& filename) const;
+    bool ExportToFile(const std::string& filename) const;
+    bool ExportHeader(const std::string& filename) const;
 
 private:
     // Main scan functions
     void ScanMapOffsets();
     void ScanEntryOffsets();
     void ScanStringOffsets();
-    
+
     // Structure finders
-    std::vector<uintptr_t> FindMapStructures();
-    std::vector<uintptr_t> FindEntryStructures(const std::vector<uintptr_t>& maps);
-    std::vector<uintptr_t> FindStringStructures();
-    
+    const std::vector<uintptr_t>& GetMapStructures() const;
+    std::vector<uintptr_t> FindMapStructures() const;
+    std::vector<uintptr_t> FindEntryStructures(const std::vector<uintptr_t>& maps) const;
+    std::vector<uintptr_t> FindStringStructures() const;
+
     // Analysis functions
     std::map<int, uint64_t> ReadFields(uintptr_t addr, int maxBytes) const;
-    
+
     // Validation
     bool IsValidPointer(uint64_t value) const;
     bool IsHeapMemory(uint64_t value) const;
     bool IsCodePointer(uint64_t value) const;
     bool IsBitMask(uint64_t value) const;
     bool IsLikelyStringData(uint64_t value) const;
-    
+
     // Helpers
     int MostVoted(const std::map<int, int>& votes) const;
     double CalcConfidence(const std::map<int, int>& votes, int offset) const;
     uintptr_t GetStringLen(uintptr_t strAddr) const;
-    std::vector<uintptr_t> GetAllocatorStructures() const;
 };

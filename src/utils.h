@@ -2,39 +2,65 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <Psapi.h>
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <string>
-#include <sstream>
 #include <algorithm>
-#include <thread>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace Utils {
-    enum class Color {
-        RED = 12, GREEN = 10, YELLOW = 14, BLUE = 9, CYAN = 11, WHITE = 15, GRAY = 8
+    enum class Color : WORD {
+        RED = 12,
+        GREEN = 10,
+        YELLOW = 14,
+        BLUE = 9,
+        CYAN = 11,
+        WHITE = 15,
+        GRAY = 8
     };
 
     inline void SetColor(Color color) {
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), static_cast<WORD>(color));
+        HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (console != INVALID_HANDLE_VALUE) {
+            SetConsoleTextAttribute(console, static_cast<WORD>(color));
+        }
     }
+
     inline void ResetColor() { SetColor(Color::WHITE); }
-    
+
+    class ScopedColor {
+    public:
+        explicit ScopedColor(Color color) { SetColor(color); }
+        ~ScopedColor() { ResetColor(); }
+
+        ScopedColor(const ScopedColor&) = delete;
+        ScopedColor& operator=(const ScopedColor&) = delete;
+    };
+
     inline void LogInfo(const std::string& msg) {
-        SetColor(Color::CYAN); std::cout << "[*] "; ResetColor();
+        { ScopedColor color(Color::CYAN); std::cout << "[*] "; }
         std::cout << msg << std::endl;
     }
+
     inline void LogSuccess(const std::string& msg) {
-        SetColor(Color::GREEN); std::cout << "[+] "; ResetColor();
+        { ScopedColor color(Color::GREEN); std::cout << "[+] "; }
         std::cout << msg << std::endl;
     }
+
     inline void LogError(const std::string& msg) {
-        SetColor(Color::RED); std::cout << "[-] "; ResetColor();
+        { ScopedColor color(Color::RED); std::cout << "[-] "; }
         std::cout << msg << std::endl;
     }
+
     inline void LogWarning(const std::string& msg) {
-        SetColor(Color::YELLOW); std::cout << "[!] "; ResetColor();
+        { ScopedColor color(Color::YELLOW); std::cout << "[!] "; }
         std::cout << msg << std::endl;
     }
 
@@ -44,17 +70,27 @@ namespace Utils {
         return ss.str();
     }
 
-    inline bool IsProcessElevated() {
-        HANDLE hToken = NULL;
-        if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-            TOKEN_ELEVATION elevation;
-            DWORD size = sizeof(TOKEN_ELEVATION);
-            if (GetTokenInformation(hToken, TokenElevation, &elevation, size, &size)) {
-                CloseHandle(hToken);
-                return elevation.TokenIsElevated;
-            }
-            CloseHandle(hToken);
+    template<typename T>
+    inline std::optional<T> ReadUnaligned(const std::vector<uint8_t>& data, size_t offset) {
+        if (offset + sizeof(T) > data.size()) {
+            return std::nullopt;
         }
-        return false;
+
+        T value{};
+        std::memcpy(&value, data.data() + offset, sizeof(T));
+        return value;
+    }
+
+    inline bool IsProcessElevated() {
+        HANDLE token = nullptr;
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+            return false;
+        }
+
+        TOKEN_ELEVATION elevation{};
+        DWORD size = sizeof(TOKEN_ELEVATION);
+        const bool ok = GetTokenInformation(token, TokenElevation, &elevation, size, &size) != FALSE;
+        CloseHandle(token);
+        return ok && elevation.TokenIsElevated;
     }
 }
