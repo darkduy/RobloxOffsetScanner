@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -111,6 +111,17 @@ build.bat
 3. Chọn workflow **Build EXE**
 4. Click **Run workflow**
 5. Download artifact sau khi build xong
+
+
+### Repository Improvements
+
+Bản 2.1.0 bổ sung các cải tiến về maintainability và độ ổn định:
+
+- CMake chỉ rõ project là Windows-only và bật warning chặt hơn.
+- Parser command-line hiện hỗ trợ thực tế `--auto`, `--export`, `--export-header`, `--verbose`, và `--help`.
+- Memory scanning bỏ qua region không đọc được/guarded và dùng giới hạn address từ hệ thống thay vì hard-code.
+- Export header C++17 sử dụng `inline constexpr uintptr_t`.
+- Báo cáo chi tiết thay đổi nằm ở [`docs/REPORT.md`](docs/REPORT.md).
 
 ## 🚀 Usage
 
